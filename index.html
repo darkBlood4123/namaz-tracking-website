@@ -1,0 +1,1522 @@
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>সালাত ট্র্যাকার - ফরজ, বিতর ও জুমু'আ ক্যালেন্ডার</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Bengali & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        bengali: ['"Hind Siliguri"', 'sans-serif'],
+                        sans: ['"Inter"', '"Hind Siliguri"', 'sans-serif']
+                    },
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            950: '#022c22',
+                        },
+                        gold: {
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: #09100f;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #10b98155;
+            border-radius: 999px;
+        }
+        .pattern-bg {
+            background-color: #070e0c;
+            background-image: radial-gradient(#10b98118 1px, transparent 1px), radial-gradient(#10b98110 1px, #070e0c 1px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+        .glass-card {
+            background: rgba(16, 28, 25, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .glass-card-subtle {
+            background: rgba(20, 35, 31, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .scale-active:active {
+            transform: scale(0.96);
+        }
+        /* Pulse for Friday */
+        @keyframes jummaGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(234, 179, 8, 0.2); }
+            50% { box-shadow: 0 0 16px rgba(234, 179, 8, 0.45); }
+        }
+        .jumma-glow {
+            animation: jummaGlow 3s infinite ease-in-out;
+        }
+        /* Pulse for Qaza Pending */
+        @keyframes qazaPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.65; transform: scale(1.1); }
+        }
+        .qaza-pulse {
+            animation: qazaPulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="pattern-bg min-h-screen flex justify-center items-start sm:py-6 select-none">
+
+    <!-- Mobile Device Container Wrapper -->
+    <main class="w-full max-w-md bg-[#0c1614] min-h-screen sm:min-h-[880px] sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border border-emerald-900/40">
+
+        <!-- Top App Bar -->
+        <header class="pt-4 px-4 pb-3.5 bg-gradient-to-b from-[#132420] to-[#0c1614] border-b border-emerald-800/25 sticky top-0 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/25 to-emerald-800/20 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shadow-inner">
+                        <i data-lucide="moon-star" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h1 id="userGreeting" class="font-bold text-base sm:text-lg text-white leading-tight">সালাত ট্র্যাকার</h1>
+                            <button onclick="editUserName()" class="text-xs text-emerald-400 hover:text-emerald-300 p-1 rounded-lg bg-emerald-950/60" title="নাম পরিবর্তন করুন">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-emerald-400/80 font-medium flex items-center gap-1">
+                            <span>৫ ওয়াক্ত ফরজ, জুমু'আ ও বিতর হিসাব</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Settings / Legend / Today Action -->
+                <div class="flex items-center gap-1.5">
+                    <button onclick="openLegendModal()" class="w-8 h-8 rounded-xl bg-emerald-950/80 border border-emerald-700/30 flex items-center justify-center text-emerald-300 hover:bg-emerald-900/50 scale-active" title="আইকন ও কালার গাইড">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="goToToday()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/35 border border-emerald-500/40 text-xs font-semibold text-emerald-300 scale-active flex items-center gap-1 shadow-sm">
+                        <i data-lucide="calendar-check-2" class="w-3.5 h-3.5"></i>
+                        <span>আজ</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Summary Stats Bar (4 Cards including Witr & Qaza) -->
+            <div class="grid grid-cols-4 gap-1.5 mt-3.5 pt-3 border-t border-emerald-900/30 text-center">
+                <div class="bg-emerald-950/40 rounded-xl p-1.5 border border-emerald-800/25">
+                    <span class="text-[10px] text-gray-400 block">ফরজ আদায়</span>
+                    <span id="monthlyFarzStat" class="text-xs sm:text-sm font-bold text-emerald-400">০%</span>
+                </div>
+                <div class="bg-purple-950/35 rounded-xl p-1.5 border border-purple-800/25">
+                    <span class="text-[10px] text-gray-400 block">বিতর আদায়</span>
+                    <span id="monthlyWitrStat" class="text-xs sm:text-sm font-bold text-purple-300">০ দিন</span>
+                </div>
+                <div onclick="openQazaSheet()" class="bg-amber-950/35 rounded-xl p-1.5 border border-amber-700/30 cursor-pointer scale-active">
+                    <span class="text-[10px] text-amber-300/90 flex items-center justify-center gap-0.5">
+                        <span>ক্বজা বাকি</span>
+                        <i data-lucide="alert-triangle" class="w-2.5 h-2.5 text-amber-400"></i>
+                    </span>
+                    <span id="totalQazaCount" class="text-xs sm:text-sm font-bold text-amber-400">০ ওয়াক্ত</span>
+                </div>
+                <div class="bg-yellow-950/35 rounded-xl p-1.5 border border-yellow-700/25">
+                    <span class="text-[10px] text-gray-400 block">জুমু'আ আদায়</span>
+                    <span id="jummaStat" class="text-xs sm:text-sm font-bold text-yellow-400">০ টি</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Body -->
+        <div class="flex-1 overflow-y-auto px-3.5 py-3.5 pb-28 space-y-3.5">
+
+            <!-- Calendar Section with Mini Summary Icons -->
+            <section class="glass-card rounded-2xl p-3.5 shadow-lg border border-emerald-800/30">
+                <!-- Month Header & Switcher -->
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 id="currentMonthYear" class="text-base font-bold text-white flex items-center gap-1.5">
+                            মার্চ ২০২৫
+                        </h2>
+                        <span class="text-[11px] text-gray-400">প্রতিদিনের আইকনে ফরজ, বিতর ও ক্বজা সারসংক্ষেপ দেখুন</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="changeMonth(-1)" class="p-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-700/30 scale-active" aria-label="পূর্ববর্তী মাস">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="changeMonth(1)" class="p-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-700/30 scale-active" aria-label="পরবর্তী মাস">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Weekday Headers (Saturday to Friday) -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-400 mb-1.5">
+                    <div>শনি</div>
+                    <div>রবি</div>
+                    <div>সোম</div>
+                    <div>মঙ্গল</div>
+                    <div>বুধ</div>
+                    <div>বৃহ:</div>
+                    <div class="text-yellow-400 font-bold flex items-center justify-center gap-0.5 bg-yellow-950/30 rounded-md py-0.5 border border-yellow-700/20">
+                        <span>শুক্র</span>
+                        <i data-lucide="sparkles" class="w-2.5 h-2.5 text-yellow-400"></i>
+                    </div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5">
+                    <!-- Dynamically populated by JS -->
+                </div>
+
+                <!-- Mini Icon Legend Strip below Calendar -->
+                <div class="mt-3 pt-2.5 border-t border-emerald-900/30 grid grid-cols-4 gap-1 text-[10px] text-gray-300">
+                    <div class="flex items-center gap-1">
+                        <span class="px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">৫/৫</span>
+                        <span>ফরজ সংখ্যা</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="w-3.5 h-3.5 rounded-full bg-purple-500/25 border border-purple-400/50 flex items-center justify-center text-purple-300">
+                            <i data-lucide="moon" class="w-2.5 h-2.5"></i>
+                        </span>
+                        <span>বিতর সম্পন্ন</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500/25 border border-amber-400/50 flex items-center justify-center text-amber-400">
+                            <i data-lucide="alert-circle" class="w-2.5 h-2.5"></i>
+                        </span>
+                        <span>ক্বজা বাকি</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-yellow-300">
+                        <i data-lucide="crown" class="w-3 h-3 text-yellow-400"></i>
+                        <span>জুমু'আ বার</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Visual Summary & Reminder Banner -->
+            <section id="dailyVisualSummaryCard" class="glass-card rounded-2xl p-3.5 shadow-lg border border-emerald-800/30">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="eye" class="w-4 h-4 text-emerald-400"></i>
+                        <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">দৈনিক সারসংক্ষেপ ও ক্বজা রিমাইন্ডার</h3>
+                    </div>
+                    <span id="summaryStatusPill" class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-semibold">পর্যবেক্ষণ</span>
+                </div>
+
+                <!-- 6 Mini Visual Icons Strip (5 Farz + 1 Witr) -->
+                <div id="dailyMiniIconsStrip" class="grid grid-cols-6 gap-1.5 my-2">
+                    <!-- Populated by JS: Visual mini badges for Fajr, Dhuhr/Jumma, Asr, Maghrib, Isha, Witr -->
+                </div>
+
+                <!-- Dynamic Reminder Message Box (Reminds how many Farz prayed & Which Qaza is pending) -->
+                <div id="dailyReminderBox" class="mt-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-xs flex items-start gap-2">
+                    <!-- Filled dynamically -->
+                </div>
+            </section>
+
+            <!-- Detailed Selected Day Prayer Tracker Card -->
+            <section id="selectedDateCard" class="glass-card rounded-2xl p-3.5 shadow-lg border border-emerald-800/30 transition-all duration-300">
+                <!-- Selected Date Header -->
+                <div class="flex items-center justify-between mb-3 border-b border-emerald-900/40 pb-2.5">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 id="selectedDateText" class="text-base font-bold text-white">২৫ মার্চ, ২০২৫</h3>
+                            <span id="selectedDayBadge" class="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/40">
+                                মঙ্গলবার
+                            </span>
+                        </div>
+                        <p id="selectedDateSubtitle" class="text-[11px] text-gray-400 mt-0.5">নামাজের নামের পাশে ট্যাপ করে অবস্থা পরিবর্তন করুন</p>
+                    </div>
+
+                    <!-- Quick Action: Mark All 5 Farz + Witr as Prayed -->
+                    <button onclick="markAllPrayedToday()" class="px-2.5 py-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-1 scale-active shadow-sm">
+                        <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                        <span>সব আদায়</span>
+                    </button>
+                </div>
+
+                <!-- Special Friday (Jumma) Alert Banner -->
+                <div id="jummaBanner" class="hidden mb-3 p-2.5 rounded-xl bg-gradient-to-r from-yellow-950/70 via-amber-900/40 to-yellow-950/70 border border-yellow-500/40 text-yellow-300 flex items-center gap-2.5 text-xs jumma-glow">
+                    <span class="p-2 bg-yellow-500/20 rounded-xl text-yellow-400 shrink-0">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    </span>
+                    <div>
+                        <div class="font-bold text-yellow-300">পবিত্র জুমু'আ মোবারক!</div>
+                        <span class="text-yellow-200/80 text-[11px]">আজ শুক্রবার। যোহরের পরিবর্তে ২ রাক'আত জুমু'আর ফরজ নামাজ তালিকায় যুক্ত হয়েছে।</span>
+                    </div>
+                </div>
+
+                <!-- 5 Farz + 1 Witr Prayers List -->
+                <div class="space-y-2" id="prayersList">
+                    <!-- Dynamic Prayer rows (Fajr, Dhuhr/Jumma, Asr, Maghrib, Isha, Witr) populated by JS -->
+                </div>
+            </section>
+
+            <!-- Optional Sunnah & Nafl Tracker Card -->
+            <section class="glass-card-subtle rounded-2xl p-3.5 border border-emerald-900/30">
+                <div class="flex items-center justify-between mb-2.5">
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-300">
+                        <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-400"></i>
+                        <span>সুন্নত ও নফল আমল ট্র্যাকার</span>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/40">ঐচ্ছিক সওয়াব</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                    <button onclick="toggleExtraPrayer('sunnah')" id="btn-sunnah" class="p-2 rounded-xl border border-gray-800 bg-black/25 text-gray-400 flex flex-col items-center gap-1 transition-all scale-active">
+                        <span class="font-medium">১২ রাকাত সুন্নত</span>
+                        <span class="status-indicator text-[10px] text-gray-500">পড়া হয়নি</span>
+                    </button>
+                    <button onclick="toggleExtraPrayer('tahajjud')" id="btn-tahajjud" class="p-2 rounded-xl border border-gray-800 bg-black/25 text-gray-400 flex flex-col items-center gap-1 transition-all scale-active">
+                        <span class="font-medium">তাহাজ্জুদ</span>
+                        <span class="status-indicator text-[10px] text-gray-500">পড়া হয়নি</span>
+                    </button>
+                    <button onclick="toggleExtraPrayer('tilawat')" id="btn-tilawat" class="p-2 rounded-xl border border-gray-800 bg-black/25 text-gray-400 flex flex-col items-center gap-1 transition-all scale-active">
+                        <span class="font-medium">কুরআন তিলাওয়াত</span>
+                        <span class="status-indicator text-[10px] text-gray-500">পড়া হয়নি</span>
+                    </button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Sticky Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 left-0 right-0 glass-card border-t border-emerald-800/35 px-4 py-2.5 flex items-center justify-around z-30">
+            <button onclick="scrollToSection('top')" class="flex flex-col items-center text-emerald-400 text-[11px] font-semibold focus:outline-none scale-active">
+                <i data-lucide="calendar-days" class="w-5 h-5 mb-0.5"></i>
+                <span>ক্যালেন্ডার</span>
+            </button>
+            <button onclick="openQazaSheet()" class="flex flex-col items-center text-gray-300 hover:text-amber-300 text-[11px] font-medium focus:outline-none scale-active">
+                <div class="relative">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5 mb-0.5 text-amber-400"></i>
+                    <span id="navQazaBadge" class="hidden absolute -top-1.5 -right-2.5 px-1.5 py-0.2 text-[9px] font-bold bg-amber-500 text-black rounded-full shadow">০</span>
+                </div>
+                <span>ক্বজা বকেয়া</span>
+            </button>
+            <button onclick="openExportModal()" class="flex flex-col items-center text-gray-300 hover:text-emerald-300 text-[11px] font-medium focus:outline-none scale-active">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 mb-0.5 text-cyan-400"></i>
+                <span>মাসিক রিপোর্ট</span>
+            </button>
+            <button onclick="openLegendModal()" class="flex flex-col items-center text-gray-300 hover:text-emerald-300 text-[11px] font-medium focus:outline-none scale-active">
+                <i data-lucide="award" class="w-5 h-5 mb-0.5 text-purple-400"></i>
+                <span>আইকন গাইড</span>
+            </button>
+        </nav>
+
+        <!-- Status Picker Bottom Sheet Modal (Separate Options for Prayed, Qaza Pending, Qaza Done, Missed) -->
+        <div id="statusPickerModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity duration-200">
+            <div class="w-full max-w-md bg-[#101d1a] rounded-t-3xl sm:rounded-2xl border border-emerald-600/40 p-5 shadow-2xl space-y-3.5 transform translate-y-full transition-transform duration-300" id="statusPickerContent">
+                <div class="flex items-center justify-between pb-2.5 border-b border-gray-800">
+                    <div>
+                        <h4 id="modalPrayerTitle" class="text-base font-bold text-white flex items-center gap-2">
+                            ফজর নামাজের অবস্থা
+                        </h4>
+                        <p id="modalPrayerSubtitle" class="text-xs text-gray-400 mt-0.5">নামাজটি কি ওয়াক্তে পড়েছেন নাকি ক্বজা হয়েছে?</p>
+                    </div>
+                    <button onclick="closeStatusPicker()" class="p-1.5 rounded-full text-gray-400 hover:text-white bg-gray-800/60">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2 pt-1">
+                    <!-- Option 1: Prayed On Time -->
+                    <button onclick="setPrayerStatus('prayed')" class="w-full flex items-center justify-between p-3 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-500/40 text-emerald-300 text-sm font-semibold scale-active">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                            </span>
+                            <div class="text-left">
+                                <span class="block text-white">ওয়াক্তমতো আদায় করেছি</span>
+                                <span class="text-[11px] font-normal text-emerald-400/80">নির্ধারিত সময়ের ভেতর সম্পন্ন হয়েছে</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">আদায় ✓</span>
+                    </button>
+
+                    <!-- Option 2: Qaza Pending (Missed time, need to pray Qaza) -->
+                    <button onclick="setPrayerStatus('qaza_pending')" class="w-full flex items-center justify-between p-3 rounded-xl bg-amber-950/50 hover:bg-amber-900/50 border border-amber-500/40 text-amber-300 text-sm font-semibold scale-active">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            </span>
+                            <div class="text-left">
+                                <span class="block text-amber-200">ক্বজা হয়েছে (পড়তে বাকি)</span>
+                                <span class="text-[11px] font-normal text-amber-400/80">ওয়াক্ত চলে গেছে, ক্বজা তালিকায় জমা থাকবে</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">ক্বজা বাকি !</span>
+                    </button>
+
+                    <!-- Option 3: Qaza Completed (Was Qaza, now prayed) -->
+                    <button onclick="setPrayerStatus('qaza_done')" class="w-full flex items-center justify-between p-3 rounded-xl bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 text-sm font-semibold scale-active">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            </span>
+                            <div class="text-left">
+                                <span class="block text-cyan-100">ক্বজা আদায় সম্পন্ন করেছি</span>
+                                <span class="text-[11px] font-normal text-cyan-400/80">ক্বজা হয়েছিল, পরে পড়ে নিয়েছি</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">ক্বজা পূর্ণ ↺</span>
+                    </button>
+
+                    <!-- Option 4: Not Prayed / Missed -->
+                    <button onclick="setPrayerStatus('missed')" class="w-full flex items-center justify-between p-3 rounded-xl bg-rose-950/50 hover:bg-rose-900/50 border border-rose-500/40 text-rose-300 text-sm font-semibold scale-active">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            </span>
+                            <div class="text-left">
+                                <span class="block text-rose-200">পড়া হয়নি (মিসড)</span>
+                                <span class="text-[11px] font-normal text-rose-400/80">নামাজটি আদায় করা হয়নি</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">মিসড ✕</span>
+                    </button>
+
+                    <!-- Option 5: Clear / Reset -->
+                    <button onclick="setPrayerStatus('none')" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-gray-800/40 hover:bg-gray-800/70 border border-gray-700/50 text-gray-400 text-xs scale-active">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-lg bg-gray-700 flex items-center justify-center text-gray-300">
+                                <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                            </span>
+                            <span>চিহ্ন মুছে ফেলুন (রিসেট)</span>
+                        </div>
+                        <span class="text-gray-500">খালি</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Qaza Manager Modal (Shows specific missed dates & prayers) -->
+        <div id="qazaModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
+            <div class="w-full max-w-md bg-[#101d1a] rounded-t-3xl sm:rounded-2xl border border-amber-500/40 p-5 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-white text-base">বকেয়া ক্বজা নামাজের তালিকা</h3>
+                            <p class="text-xs text-gray-400">যেসব ফরজ ও বিতর ক্বজা এখনো পড়া হয়নি</p>
+                        </div>
+                    </div>
+                    <button onclick="closeQazaSheet()" class="p-1.5 rounded-full text-gray-400 hover:text-white bg-gray-800/60">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Scrollable Content inside Qaza Modal -->
+                <div class="overflow-y-auto space-y-4 flex-1 pr-1">
+                    <!-- Specific Pending Dates Reminder List -->
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
+                            <span>তারিখ অনুযায়ী অপঠিত ক্বজা সমূহ:</span>
+                        </h4>
+                        <div id="specificPendingQazaList" class="space-y-1.5">
+                            <!-- Dynamically populated specific date + prayer items -->
+                        </div>
+                    </div>
+
+                    <!-- Overall Counter per Prayer Type -->
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>ওয়াক্ত ভিত্তিক মোট ক্বজা হিসাব:</span>
+                        </h4>
+                        <div id="qazaBreakdownList" class="space-y-2">
+                            <!-- Populated dynamically (Fajr, Dhuhr, Asr, Maghrib, Isha, Witr) -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl text-[11px] text-amber-200/90 leading-relaxed shrink-0">
+                    💡 <strong>স্মারক:</strong> ৫ ওয়াক্ত ফরজ এবং ওয়াজিব বিতর নামাজ ছুটে গেলে তার ক্বজা আদায় করা আবশ্যক। "আদায় করেছি" বাটনে চাপ দিলে সাথে সাথে তা ক্বজা সম্পন্ন হিসেবে নীল রঙে চিহ্নিত হবে।
+                </div>
+            </div>
+        </div>
+
+        <!-- Icon & Color Guide Modal -->
+        <div id="legendModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+            <div class="w-full max-w-sm bg-[#101d1a] rounded-2xl border border-emerald-600/40 p-5 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-2.5">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i>
+                        <span>ক্যালেন্ডার আইকন ও কালার গাইড</span>
+                    </h3>
+                    <button onclick="closeLegendModal()" class="p-1 rounded-full text-gray-400 hover:text-white bg-gray-800/50">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="flex items-start gap-2.5">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 shrink-0">৫/৫</span>
+                        <div>
+                            <span class="font-semibold text-emerald-400">ফরজ নামাজ কাউন্টার (০/৫ থেকে ৫/৫):</span>
+                            <p class="text-gray-300">প্রতিদিন আপনি কয় ওয়াক্ত ফরজ (অথবা শুক্রবারে জুমু'আসহ) আদায় করেছেন তা সংখ্যা ও ৫টি ছোট ডট দিয়ে দেখায়।</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-purple-500/25 border border-purple-400/50 flex items-center justify-center text-purple-300 shrink-0">
+                            <i data-lucide="moon" class="w-3 h-3"></i>
+                        </span>
+                        <div>
+                            <span class="font-semibold text-purple-300">বিতর (Witr) নামাজ আইকন:</span>
+                            <p class="text-gray-300">এশার পর ৩ রাক'আত বিতর আদায় করলে ক্যালেন্ডারের ঘরে বেগুনি চাঁদ আইকন ভেসে ওঠে।</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/25 border border-amber-400/50 flex items-center justify-center text-amber-400 shrink-0">
+                            <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                        </span>
+                        <div>
+                            <span class="font-semibold text-amber-400">ক্বজা বাকি (Qaza Pending) আইকন:</span>
+                            <p class="text-gray-300">কোনো নামাজ ক্বজা হলে কমলা সতর্কবার্তা আইকন দেখায় যেন আপনি সহজেই মনে করে ক্বজা পড়ে নিতে পারেন।</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-cyan-500/25 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shrink-0">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                        </span>
+                        <div>
+                            <span class="font-semibold text-cyan-300">নীল (ক্বজা আদায় সম্পন্ন):</span>
+                            <p class="text-gray-300">ক্বজা হওয়া নামাজ পরবর্তীতে পড়ে নিলে নীল রঙে প্রদর্শিত হয়।</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-5 h-5 rounded-full bg-yellow-500/25 border border-yellow-400/50 flex items-center justify-center text-yellow-300 shrink-0">
+                            <i data-lucide="crown" class="w-3 h-3"></i>
+                        </span>
+                        <div>
+                            <span class="font-semibold text-yellow-400">জুমু'আ বার (শুক্রবার):</span>
+                            <p class="text-gray-300">শুক্রবার দিনে স্বয়ংক্রিয়ভাবে যোহরের পরিবর্তে "জুমু'আ" যুক্ত হয় ও সোনালী মুকুট দেখায়।</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="closeLegendModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-xl transition scale-active">
+                    বুঝতে পেরেছি
+                </button>
+            </div>
+        </div>
+
+        <!-- Monthly Report Modal -->
+        <div id="reportModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+            <div class="w-full max-w-sm bg-[#101d1a] rounded-2xl border border-emerald-600/40 p-5 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-2.5">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-400"></i>
+                        <span id="reportMonthTitle">মাসিক সালাত রিপোর্ট</span>
+                    </h3>
+                    <button onclick="closeReportModal()" class="p-1 rounded-full text-gray-400 hover:text-white bg-gray-800/50">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div id="reportStatsContent" class="space-y-2.5">
+                    <!-- Filled by JS -->
+                </div>
+
+                <button onclick="closeReportModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-xl transition scale-active">
+                    বন্ধ করুন
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Application JavaScript -->
+    <script>
+        // Bengali Numerals Converter
+        const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        function toBengaliNum(num) {
+            if (num === undefined || num === null) return '০';
+            return num.toString().replace(/\d/g, d => bengaliDigits[d]);
+        }
+
+        const bengaliMonths = [
+            'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+            'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+        ];
+        const bengaliDaysLong = ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'];
+
+        // Core App State
+        let currentYear, currentMonth;
+        let selectedDateStr = null; // format: YYYY-MM-DD
+        let activePrayerForModal = null;
+
+        let userData = {
+            name: 'মুসলিম',
+            records: {}, 
+            // 'YYYY-MM-DD': { fajr, dhuhr, asr, maghrib, isha, witr, extras: { sunnah, tahajjud, tilawat } }
+            manualQazaCounters: {
+                fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0
+            }
+        };
+
+        // 5 Farz keys + Witr key
+        const FARZ_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        const ALL_TRACKED_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'witr'];
+
+        // Helper: Check if a date string (YYYY-MM-DD) is Friday
+        function isFridayDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            return dateObj.getDay() === 5;
+        }
+
+        // Get Bengali Name for a Prayer Key on a specific date
+        function getPrayerLabel(key, isFriday = false) {
+            const map = {
+                fajr: 'ফজর',
+                dhuhr: isFriday ? "জুমু'আ" : 'যোহর',
+                asr: 'আসর',
+                maghrib: 'মাগরিব',
+                isha: 'এশা',
+                witr: 'বিতর'
+            };
+            return map[key] || key;
+        }
+
+        // Initialize App
+        function initApp() {
+            const saved = localStorage.getItem('namaz_tracker_app_v3');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    userData = { ...userData, ...parsed };
+                    if (!userData.manualQazaCounters) {
+                        userData.manualQazaCounters = { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 };
+                    }
+                } catch (e) {
+                    console.error('Error loading saved data', e);
+                }
+            } else {
+                // Migrate from v2 if present
+                const oldSaved = localStorage.getItem('namaz_tracker_app_v2');
+                if (oldSaved) {
+                    try {
+                        const parsed = JSON.parse(oldSaved);
+                        userData = { ...userData, ...parsed };
+                    } catch (e) {}
+                }
+            }
+
+            updateGreetingUI();
+
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth();
+
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            selectedDateStr = `${yyyy}-${mm}-${dd}`;
+
+            renderCalendar();
+            renderSelectedDay();
+            updateTopStats();
+            lucide.createIcons();
+        }
+
+        function saveData() {
+            localStorage.setItem('namaz_tracker_app_v3', JSON.stringify(userData));
+            updateTopStats();
+        }
+
+        function updateGreetingUI() {
+            const el = document.getElementById('userGreeting');
+            if (el) {
+                el.innerText = `${userData.name}-এর সালাত ডায়েরি`;
+            }
+        }
+
+        function editUserName() {
+            const newName = prompt('আপনার নাম লিখুন:', userData.name);
+            if (newName && newName.trim()) {
+                userData.name = newName.trim();
+                saveData();
+                updateGreetingUI();
+            }
+        }
+
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear -= 1;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear += 1;
+            }
+            renderCalendar();
+            updateTopStats();
+            lucide.createIcons();
+        }
+
+        function goToToday() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            selectedDateStr = `${yyyy}-${mm}-${dd}`;
+            renderCalendar();
+            renderSelectedDay();
+            updateTopStats();
+        }
+
+        function scrollToSection(where) {
+            if (where === 'top') {
+                document.querySelector('.overflow-y-auto').scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Render Calendar Grid with Summary Icons (Farz count, Witr icon, Qaza warning icon, Jumma icon)
+        function renderCalendar() {
+            const monthHeader = document.getElementById('currentMonthYear');
+            monthHeader.innerText = `${bengaliMonths[currentMonth]} ${toBengaliNum(currentYear)}`;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            // Saturday = index 0
+            const saturdayBasedStart = (firstDayIndex + 1) % 7;
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // Empty cells before 1st of month
+            for (let i = 0; i < saturdayBasedStart; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'h-16 sm:h-[68px] rounded-xl bg-transparent';
+                grid.appendChild(emptyCell);
+            }
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isSelected = (dayStr === selectedDateStr);
+                const isToday = (dayStr === todayStr);
+                const isFri = isFridayDate(dayStr);
+
+                const dayRecord = userData.records[dayStr] || {};
+
+                // Calculate Farz stats (out of 5)
+                let farzCompleted = 0;
+                let pendingQazaCount = 0;
+                let missedCount = 0;
+
+                FARZ_KEYS.forEach(pk => {
+                    const st = dayRecord[pk];
+                    if (st === 'prayed' || st === 'qaza_done') farzCompleted++;
+                    if (st === 'qaza_pending') pendingQazaCount++;
+                    if (st === 'missed') missedCount++;
+                });
+
+                // Check Witr status
+                const witrStatus = dayRecord['witr'] || 'none';
+                const isWitrDone = (witrStatus === 'prayed' || witrStatus === 'qaza_done');
+                if (witrStatus === 'qaza_pending') pendingQazaCount++;
+
+                // Styling cell border
+                let cellBorder = 'border-emerald-900/25';
+                let cellBg = 'bg-black/25 hover:bg-emerald-950/35';
+
+                if (isFri) {
+                    cellBorder = 'border-yellow-600/35';
+                    cellBg = 'bg-yellow-950/10 hover:bg-yellow-950/25';
+                }
+                if (farzCompleted === 5 && pendingQazaCount === 0) {
+                    cellBorder = 'border-emerald-500/40';
+                    cellBg = 'bg-emerald-950/25';
+                }
+                if (pendingQazaCount > 0) {
+                    cellBorder = 'border-amber-500/45';
+                }
+                if (isSelected) {
+                    cellBorder = 'border-emerald-400 ring-2 ring-emerald-400/40';
+                    cellBg = 'bg-emerald-950/90 shadow-lg z-10';
+                }
+
+                const dayCell = document.createElement('button');
+                dayCell.type = 'button';
+                dayCell.onclick = () => selectDate(dayStr);
+                dayCell.className = `h-16 sm:h-[68px] p-1 rounded-xl flex flex-col items-center justify-between transition-all relative border ${cellBorder} ${cellBg} scale-active`;
+
+                // 1. Top Row: Date Number + Status Mini Icons (Jumma Crown, Qaza Alert, Witr Moon)
+                let miniIconsHtml = '<div class="flex items-center gap-0.5">';
+                if (isFri) {
+                    const jummaDone = (dayRecord['dhuhr'] === 'prayed' || dayRecord['dhuhr'] === 'qaza_done');
+                    miniIconsHtml += `<span title="জুমু'আ বার" class="${jummaDone ? 'text-yellow-400' : 'text-yellow-500/60'}"><i data-lucide="crown" class="w-2.5 h-2.5"></i></span>`;
+                }
+                if (isWitrDone) {
+                    miniIconsHtml += `<span title="বিতর আদায় সম্পন্ন" class="text-purple-400"><i data-lucide="moon" class="w-2.5 h-2.5"></i></span>`;
+                }
+                if (pendingQazaCount > 0) {
+                    miniIconsHtml += `<span title="${toBengaliNum(pendingQazaCount)}টি ক্বজা বাকি" class="text-amber-400 qaza-pulse"><i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i></span>`;
+                }
+                miniIconsHtml += '</div>';
+
+                const topRow = `
+                    <div class="w-full flex items-center justify-between px-0.5">
+                        <span class="text-[11px] font-bold leading-none ${
+                            isSelected ? 'text-emerald-300' : (isToday ? 'text-emerald-400 underline' : (isFri ? 'text-yellow-300' : 'text-gray-200'))
+                        }">${toBengaliNum(day)}</span>
+                        ${miniIconsHtml}
+                    </div>
+                `;
+
+                // 2. Middle Row: 5 Mini Dots for 5 Farz + 1 Dot for Witr
+                let dotsHtml = '<div class="flex items-center gap-0.5 my-0.5">';
+                FARZ_KEYS.forEach(pk => {
+                    const s = dayRecord[pk];
+                    let dotColor = 'bg-gray-700/70';
+                    if (s === 'prayed') dotColor = 'bg-emerald-400';
+                    else if (s === 'qaza_done') dotColor = 'bg-cyan-400';
+                    else if (s === 'qaza_pending') dotColor = 'bg-amber-400';
+                    else if (s === 'missed') dotColor = 'bg-rose-500';
+                    dotsHtml += `<span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>`;
+                });
+                // 6th small diamond/dot for Witr
+                let witrDotColor = 'bg-gray-800';
+                if (witrStatus === 'prayed') witrDotColor = 'bg-purple-400';
+                else if (witrStatus === 'qaza_done') witrDotColor = 'bg-cyan-300';
+                else if (witrStatus === 'qaza_pending') witrDotColor = 'bg-amber-400';
+                else if (witrStatus === 'missed') witrDotColor = 'bg-rose-500';
+                dotsHtml += `<span class="w-1.5 h-1.5 rounded-sm ml-0.5 ${witrDotColor}" title="বিতর"></span>`;
+                dotsHtml += '</div>';
+
+                // 3. Bottom Summary Pill: Shows how many Farz prayed (e.g. ৫/৫ ফরজ) or Qaza badge
+                let bottomBadge = '';
+                if (pendingQazaCount > 0) {
+                    bottomBadge = `<span class="text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 font-semibold leading-tight">${toBengaliNum(farzCompleted)}/৫ • ${toBengaliNum(pendingQazaCount)} ক্বজা</span>`;
+                } else if (farzCompleted === 5) {
+                    bottomBadge = `<span class="text-[9px] px-1 rounded bg-emerald-500/25 text-emerald-300 font-bold leading-tight">৫/৫ পূর্ণ${isWitrDone ? '+বিতর' : ''}</span>`;
+                } else if (farzCompleted > 0 || isWitrDone || missedCount > 0) {
+                    bottomBadge = `<span class="text-[9px] text-gray-300 font-medium leading-tight">${toBengaliNum(farzCompleted)}/৫ ফরজ</span>`;
+                } else {
+                    bottomBadge = `<span class="text-[9px] text-gray-600 leading-tight">${isFri ? "জুমু'আ" : '-'}</span>`;
+                }
+
+                dayCell.innerHTML = `${topRow}${dotsHtml}${bottomBadge}`;
+                grid.appendChild(dayCell);
+            }
+        }
+
+        function selectDate(dateStr) {
+            selectedDateStr = dateStr;
+            renderCalendar();
+            renderSelectedDay();
+            lucide.createIcons();
+        }
+
+        // Render Selected Day Visual Summary Strip + Detailed Prayer Rows
+        function renderSelectedDay() {
+            if (!selectedDateStr) return;
+
+            const [year, month, day] = selectedDateStr.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            const dayOfWeek = dateObj.getDay();
+            const isFriday = (dayOfWeek === 5);
+
+            // Header Update
+            document.getElementById('selectedDateText').innerText = `${toBengaliNum(day)} ${bengaliMonths[month - 1]}, ${toBengaliNum(year)}`;
+            const dayBadge = document.getElementById('selectedDayBadge');
+            dayBadge.innerText = bengaliDaysLong[dayOfWeek];
+
+            if (isFriday) {
+                dayBadge.className = 'text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-yellow-950 text-yellow-300 border border-yellow-500/40';
+                document.getElementById('jummaBanner').classList.remove('hidden');
+            } else {
+                dayBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/40';
+                document.getElementById('jummaBanner').classList.add('hidden');
+            }
+
+            const dayRecord = userData.records[selectedDateStr] || {};
+
+            // Configuration for 5 Farz + 1 Witr
+            const prayerConfig = [
+                {
+                    id: 'fajr',
+                    shortName: 'ফজর',
+                    name: 'ফজর নামাজ',
+                    typeBadge: 'ফরজ',
+                    rakats: "২ রাক'আত ফরজ",
+                    icon: 'sunrise',
+                    isFarz: true
+                },
+                {
+                    id: 'dhuhr',
+                    shortName: isFriday ? "জুমু'আ" : 'যোহর',
+                    name: isFriday ? "পবিত্র জুমু'আ নামাজ" : 'যোহর নামাজ',
+                    typeBadge: isFriday ? "জুমু'আ ফরজ" : 'ফরজ',
+                    rakats: isFriday ? "২ রাক'আত ফরজ (খুতবাসহ)" : "৪ রাক'আত ফরজ",
+                    icon: isFriday ? 'crown' : 'sun',
+                    isFarz: true,
+                    isJummaSpecial: isFriday
+                },
+                {
+                    id: 'asr',
+                    shortName: 'আসর',
+                    name: 'আসর নামাজ',
+                    typeBadge: 'ফরজ',
+                    rakats: "৪ রাক'আত ফরজ",
+                    icon: 'cloud-sun',
+                    isFarz: true
+                },
+                {
+                    id: 'maghrib',
+                    shortName: 'মাগরিব',
+                    name: 'মাগরিব নামাজ',
+                    typeBadge: 'ফরজ',
+                    rakats: "৩ রাক'আত ফরজ",
+                    icon: 'sunset',
+                    isFarz: true
+                },
+                {
+                    id: 'isha',
+                    shortName: 'এশা',
+                    name: 'এশা নামাজ',
+                    typeBadge: 'ফরজ',
+                    rakats: "৪ রাক'আত ফরজ",
+                    icon: 'moon-star',
+                    isFarz: true
+                },
+                {
+                    id: 'witr',
+                    shortName: 'বিতর',
+                    name: 'বিতর নামাজ (Witr)',
+                    typeBadge: 'ওয়াজিব',
+                    rakats: "৩ রাক'আত বিতর (এশার পর)",
+                    icon: 'sparkles',
+                    isFarz: false,
+                    isWitrSpecial: true
+                }
+            ];
+
+            let farzPrayedCount = 0;
+            let witrDone = false;
+            let pendingQazaNames = [];
+            let missedNames = [];
+
+            // 1. Populate Daily Mini Visual Summary Icons Strip (6 mini cards)
+            const miniStripEl = document.getElementById('dailyMiniIconsStrip');
+            miniStripEl.innerHTML = '';
+
+            // 2. Populate Detailed Prayer Rows
+            const prayerListEl = document.getElementById('prayersList');
+            prayerListEl.innerHTML = '';
+
+            prayerConfig.forEach(p => {
+                const status = dayRecord[p.id] || 'none';
+
+                if (p.isFarz && (status === 'prayed' || status === 'qaza_done')) {
+                    farzPrayedCount++;
+                }
+                if (p.id === 'witr' && (status === 'prayed' || status === 'qaza_done')) {
+                    witrDone = true;
+                }
+                if (status === 'qaza_pending') {
+                    pendingQazaNames.push(p.shortName);
+                }
+                if (status === 'missed') {
+                    missedNames.push(p.shortName);
+                }
+
+                // Mini Icon Box for Summary Strip
+                const miniBox = document.createElement('button');
+                miniBox.type = 'button';
+                miniBox.onclick = () => openStatusPicker(p.id, p.name);
+                miniBox.className = `p-1.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all scale-active ${getMiniIconBoxClass(status, p.isJummaSpecial, p.isWitrSpecial)}`;
+                miniBox.innerHTML = `
+                    <div class="relative">
+                        <i data-lucide="${p.icon}" class="w-4 h-4"></i>
+                        <span class="absolute -top-1 -right-1.5">${getMiniStatusBadgeIcon(status)}</span>
+                    </div>
+                    <span class="text-[10px] font-bold leading-none">${p.shortName}</span>
+                `;
+                miniStripEl.appendChild(miniBox);
+
+                // Detailed Row for Prayer List
+                const row = document.createElement('div');
+                row.className = `p-3 rounded-xl flex items-center justify-between border transition-all ${getStatusContainerClass(status, p.isJummaSpecial, p.isWitrSpecial)}`;
+
+                // Quick Toggle Prayed + Status Dropdown Button
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="quickTogglePrayer('${p.id}')" title="দ্রুত টিক দিন" class="w-9 h-9 rounded-xl flex items-center justify-center border transition scale-active ${getStatusIconBg(status, p.isJummaSpecial, p.isWitrSpecial)}">
+                            <i data-lucide="${status === 'prayed' ? 'check' : p.icon}" class="w-4 h-4"></i>
+                        </button>
+                        <div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-sm ${p.isJummaSpecial ? 'text-yellow-300' : (p.isWitrSpecial ? 'text-purple-200' : 'text-white')}">${p.name}</span>
+                                <span class="text-[9px] px-1.5 py-0.2 rounded font-semibold ${
+                                    p.isJummaSpecial ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
+                                    (p.isWitrSpecial ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-emerald-950 text-emerald-400 border border-emerald-800/50')
+                                }">${p.typeBadge}</span>
+                            </div>
+                            <span class="text-[11px] text-gray-400 block">${p.rakats}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        ${status !== 'qaza_pending' ? `
+                            <button onclick="quickMarkQaza('${p.id}')" title="ক্বজা হিসেবে চিহ্নিত করুন" class="p-1.5 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-700/30 text-amber-400/80 hover:text-amber-300 text-[10px] font-semibold scale-active">
+                                ক্বজা?
+                            </button>
+                        ` : ''}
+                        <button onclick="openStatusPicker('${p.id}', '${p.name}')" class="px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 scale-active ${getStatusButtonClass(status)}">
+                            <span>${getStatusLabelBengali(status)}</span>
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 opacity-70"></i>
+                        </button>
+                    </div>
+                `;
+                prayerListEl.appendChild(row);
+            });
+
+            // 3. Update Daily Visual Reminder Message Box
+            const reminderBox = document.getElementById('dailyReminderBox');
+            const statusPill = document.getElementById('summaryStatusPill');
+
+            statusPill.innerText = `ফরজ: ${toBengaliNum(farzPrayedCount)}/৫ • বিতর: ${witrDone ? 'হয়েছে ✓' : 'বাকি'}`;
+
+            if (pendingQazaNames.length > 0) {
+                reminderBox.className = 'mt-2 p-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-xs flex items-start gap-2.5 text-amber-200';
+                reminderBox.innerHTML = `
+                    <i data-lucide="bell-ring" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                    <div>
+                        <span class="font-bold text-amber-300 block">ক্বজা রিমাইন্ডার (${toBengaliNum(farzPrayedCount)}/৫ ফরজ পড়া হয়েছে):</span>
+                        <span>এই দিনে আপনার <strong>${pendingQazaNames.join(', ')}</strong> নামাজ ক্বজা হয়েছে কিন্তু এখনো পড়া হয়নি। সুবিধাজনক সময়ে ক্বজা আদায় করে নিন।</span>
+                    </div>
+                `;
+            } else if (farzPrayedCount === 5 && witrDone) {
+                reminderBox.className = 'mt-2 p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-xs flex items-center gap-2.5 text-emerald-200';
+                reminderBox.innerHTML = `
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                    <div>
+                        <span class="font-bold text-emerald-300">মাশাআল্লাহ! পূর্ণাঙ্গ সালাত আদায়:</span>
+                        <span>আপনি ৫ ওয়াক্ত ফরজ${isFriday ? " (জুমু'আসহ)" : ''} এবং বিতর নামাজ সম্পূর্ণ আদায় করেছেন। কোনো ক্বজা বাকি নেই।</span>
+                    </div>
+                `;
+            } else {
+                const remainingFarz = 5 - farzPrayedCount;
+                reminderBox.className = 'mt-2 p-2.5 rounded-xl bg-gray-900/70 border border-gray-800 text-xs flex items-start gap-2.5 text-gray-300';
+                reminderBox.innerHTML = `
+                    <i data-lucide="info" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                    <div>
+                        <span>আজ আপনি <strong class="text-emerald-400">${toBengaliNum(farzPrayedCount)} ওয়াক্ত ফরজ</strong> পড়েছেন (${toBengaliNum(remainingFarz)} ওয়াক্ত ফরজ ${witrDone ? '' : 'ও বিতর '}চিহ্নিত করা বাকি)। কোনো নামাজ ছুটে গেলে <strong>"ক্বজা?"</strong> বাটনে চাপ দিয়ে চিহ্নিত রাখুন।</span>
+                    </div>
+                `;
+            }
+
+            // Update Extra Sunnah/Nafl UI
+            const extras = dayRecord.extras || {};
+            updateExtraPrayerUI('sunnah', extras.sunnah);
+            updateExtraPrayerUI('tahajjud', extras.tahajjud);
+            updateExtraPrayerUI('tilawat', extras.tilawat);
+        }
+
+        // Mini Icon Strip Styling Helpers
+        function getMiniIconBoxClass(status, isJumma, isWitr) {
+            if (status === 'prayed') return 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300';
+            if (status === 'qaza_done') return 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300';
+            if (status === 'qaza_pending') return 'bg-amber-950/80 border-amber-500/60 text-amber-300 qaza-pulse';
+            if (status === 'missed') return 'bg-rose-950/70 border-rose-500/50 text-rose-300';
+            if (isJumma) return 'bg-yellow-950/30 border-yellow-600/40 text-yellow-400/80';
+            if (isWitr) return 'bg-purple-950/30 border-purple-700/40 text-purple-300/80';
+            return 'bg-black/30 border-gray-800 text-gray-500';
+        }
+
+        function getMiniStatusBadgeIcon(status) {
+            if (status === 'prayed') return '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 text-black flex items-center justify-center text-[7px] font-bold">✓</span>';
+            if (status === 'qaza_done') return '<span class="w-2.5 h-2.5 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[7px] font-bold">↺</span>';
+            if (status === 'qaza_pending') return '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 text-black flex items-center justify-center text-[7px] font-bold">!</span>';
+            if (status === 'missed') return '<span class="w-2.5 h-2.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[7px] font-bold">✕</span>';
+            return '';
+        }
+
+        // Row Styling Helpers
+        function getStatusContainerClass(status, isJumma, isWitr) {
+            if (status === 'prayed') return 'bg-emerald-950/40 border-emerald-500/40';
+            if (status === 'qaza_done') return 'bg-cyan-950/40 border-cyan-500/40';
+            if (status === 'qaza_pending') return 'bg-amber-950/45 border-amber-500/50';
+            if (status === 'missed') return 'bg-rose-950/40 border-rose-500/40';
+            if (isJumma) return 'bg-yellow-950/20 border-yellow-600/35';
+            if (isWitr) return 'bg-purple-950/20 border-purple-700/35';
+            return 'bg-black/25 border-gray-800/70';
+        }
+
+        function getStatusIconBg(status, isJumma, isWitr) {
+            if (status === 'prayed') return 'bg-emerald-500 text-black border-emerald-400 font-bold';
+            if (status === 'qaza_done') return 'bg-cyan-500/25 text-cyan-300 border-cyan-500/40';
+            if (status === 'qaza_pending') return 'bg-amber-500/25 text-amber-300 border-amber-500/40';
+            if (status === 'missed') return 'bg-rose-500/25 text-rose-400 border-rose-500/40';
+            if (isJumma) return 'bg-yellow-500/20 text-yellow-400 border-yellow-600/40';
+            if (isWitr) return 'bg-purple-500/20 text-purple-300 border-purple-600/40';
+            return 'bg-gray-800/80 text-gray-400 border-gray-700';
+        }
+
+        function getStatusButtonClass(status) {
+            if (status === 'prayed') return 'bg-emerald-600/30 border-emerald-500/50 text-emerald-300';
+            if (status === 'qaza_done') return 'bg-cyan-600/30 border-cyan-500/50 text-cyan-300';
+            if (status === 'qaza_pending') return 'bg-amber-600/30 border-amber-500/50 text-amber-300';
+            if (status === 'missed') return 'bg-rose-600/30 border-rose-500/50 text-rose-300';
+            return 'bg-gray-800/90 border-gray-700 text-gray-300 hover:text-white';
+        }
+
+        function getStatusLabelBengali(status) {
+            switch (status) {
+                case 'prayed': return 'আদায় ✓';
+                case 'qaza_done': return 'ক্বজা পূর্ণ ↺';
+                case 'qaza_pending': return 'ক্বজা বাকি !';
+                case 'missed': return 'পড়া হয়নি ✕';
+                default: return 'অবস্থা দিন';
+            }
+        }
+
+        // Quick 1-Tap Toggle between Prayed and None
+        function quickTogglePrayer(prayerId) {
+            if (!selectedDateStr) return;
+            if (!userData.records[selectedDateStr]) userData.records[selectedDateStr] = {};
+            const current = userData.records[selectedDateStr][prayerId] || 'none';
+            userData.records[selectedDateStr][prayerId] = (current === 'prayed') ? 'none' : 'prayed';
+            saveData();
+            renderSelectedDay();
+            renderCalendar();
+            lucide.createIcons();
+        }
+
+        // Quick 1-Tap Mark as Qaza Pending
+        function quickMarkQaza(prayerId) {
+            if (!selectedDateStr) return;
+            if (!userData.records[selectedDateStr]) userData.records[selectedDateStr] = {};
+            userData.records[selectedDateStr][prayerId] = 'qaza_pending';
+            saveData();
+            renderSelectedDay();
+            renderCalendar();
+            lucide.createIcons();
+        }
+
+        // Status Picker Modal Functions
+        function openStatusPicker(prayerId, prayerName) {
+            activePrayerForModal = prayerId;
+            document.getElementById('modalPrayerTitle').innerHTML = `
+                <span>${prayerName}</span>
+            `;
+            const modal = document.getElementById('statusPickerModal');
+            const content = document.getElementById('statusPickerContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('translate-y-full');
+            }, 10);
+            lucide.createIcons();
+        }
+
+        function closeStatusPicker() {
+            const modal = document.getElementById('statusPickerModal');
+            const content = document.getElementById('statusPickerContent');
+            content.classList.add('translate-y-full');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                activePrayerForModal = null;
+            }, 250);
+        }
+
+        function setPrayerStatus(newStatus) {
+            if (!selectedDateStr || !activePrayerForModal) return;
+            if (!userData.records[selectedDateStr]) {
+                userData.records[selectedDateStr] = {};
+            }
+            userData.records[selectedDateStr][activePrayerForModal] = newStatus;
+            saveData();
+            closeStatusPicker();
+            renderSelectedDay();
+            renderCalendar();
+            lucide.createIcons();
+        }
+
+        // Mark All 5 Farz + Witr as Prayed for Selected Date
+        function markAllPrayedToday() {
+            if (!selectedDateStr) return;
+            if (!userData.records[selectedDateStr]) {
+                userData.records[selectedDateStr] = {};
+            }
+            ALL_TRACKED_KEYS.forEach(pk => {
+                userData.records[selectedDateStr][pk] = 'prayed';
+            });
+            saveData();
+            renderSelectedDay();
+            renderCalendar();
+            lucide.createIcons();
+        }
+
+        // Extra Sunnah/Nafl Toggles
+        function toggleExtraPrayer(type) {
+            if (!selectedDateStr) return;
+            if (!userData.records[selectedDateStr]) userData.records[selectedDateStr] = {};
+            if (!userData.records[selectedDateStr].extras) userData.records[selectedDateStr].extras = {};
+
+            const current = !!userData.records[selectedDateStr].extras[type];
+            userData.records[selectedDateStr].extras[type] = !current;
+            saveData();
+            updateExtraPrayerUI(type, !current);
+        }
+
+        function updateExtraPrayerUI(type, isDone) {
+            const btn = document.getElementById(`btn-${type}`);
+            if (!btn) return;
+            const ind = btn.querySelector('.status-indicator');
+            if (isDone) {
+                btn.className = 'p-2 rounded-xl border border-emerald-500/50 bg-emerald-950/60 text-emerald-300 flex flex-col items-center gap-1 transition-all shadow scale-active';
+                ind.innerText = 'আদায় হয়েছে ✓';
+                ind.className = 'status-indicator text-[10px] text-emerald-400 font-bold';
+            } else {
+                btn.className = 'p-2 rounded-xl border border-gray-800 bg-black/25 text-gray-400 flex flex-col items-center gap-1 transition-all scale-active';
+                ind.innerText = 'পড়া হয়নি';
+                ind.className = 'status-indicator text-[10px] text-gray-500';
+            }
+        }
+
+        // Update Top Stats Bar
+        function updateTopStats() {
+            let farzPrayedMonth = 0;
+            let farzRecordedMonth = 0;
+            let witrPrayedMonth = 0;
+            let totalPendingQaza = 0;
+            let totalJummaPrayed = 0;
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const rec = userData.records[dStr];
+                if (rec) {
+                    FARZ_KEYS.forEach(pk => {
+                        if (rec[pk] && rec[pk] !== 'none') {
+                            farzRecordedMonth++;
+                            if (rec[pk] === 'prayed' || rec[pk] === 'qaza_done') {
+                                farzPrayedMonth++;
+                            }
+                        }
+                    });
+                    if (rec['witr'] === 'prayed' || rec['witr'] === 'qaza_done') {
+                        witrPrayedMonth++;
+                    }
+                }
+            }
+
+            // Calculate total pending Qaza across all dates + Jumma count
+            Object.keys(userData.records).forEach(dateKey => {
+                const rec = userData.records[dateKey];
+                const isFri = isFridayDate(dateKey);
+
+                ALL_TRACKED_KEYS.forEach(pk => {
+                    if (rec[pk] === 'qaza_pending') {
+                        totalPendingQaza++;
+                    }
+                });
+
+                if (isFri && (rec['dhuhr'] === 'prayed' || rec['dhuhr'] === 'qaza_done')) {
+                    totalJummaPrayed++;
+                }
+            });
+
+            // Add manual Qaza counters
+            Object.values(userData.manualQazaCounters || {}).forEach(c => {
+                totalPendingQaza += (c || 0);
+            });
+
+            const rate = farzRecordedMonth > 0 ? Math.round((farzPrayedMonth / farzRecordedMonth) * 100) : 0;
+
+            document.getElementById('monthlyFarzStat').innerText = `${toBengaliNum(rate)}% (${toBengaliNum(farzPrayedMonth)})`;
+            document.getElementById('monthlyWitrStat').innerText = `${toBengaliNum(witrPrayedMonth)} দিন`;
+            document.getElementById('totalQazaCount').innerText = `${toBengaliNum(totalPendingQaza)} ওয়াক্ত`;
+            document.getElementById('jummaStat').innerText = `${toBengaliNum(totalJummaPrayed)} টি`;
+
+            const navBadge = document.getElementById('navQazaBadge');
+            if (totalPendingQaza > 0) {
+                navBadge.innerText = toBengaliNum(totalPendingQaza);
+                navBadge.classList.remove('hidden');
+            } else {
+                navBadge.classList.add('hidden');
+            }
+        }
+
+        // Qaza Modal & Specific Missed Prayers Manager
+        function openQazaSheet() {
+            const modal = document.getElementById('qazaModal');
+            modal.classList.remove('hidden');
+            renderQazaBreakdown();
+            lucide.createIcons();
+        }
+
+        function closeQazaSheet() {
+            document.getElementById('qazaModal').classList.add('hidden');
+        }
+
+        function renderQazaBreakdown() {
+            // 1. Render Specific Date + Prayer Pending Qaza Items
+            const specificListEl = document.getElementById('specificPendingQazaList');
+            specificListEl.innerHTML = '';
+
+            const pendingItems = [];
+            const sortedDates = Object.keys(userData.records).sort().reverse();
+
+            sortedDates.forEach(dStr => {
+                const rec = userData.records[dStr];
+                const isFri = isFridayDate(dStr);
+                ALL_TRACKED_KEYS.forEach(pk => {
+                    if (rec[pk] === 'qaza_pending') {
+                        pendingItems.push({
+                            dateStr: dStr,
+                            prayerKey: pk,
+                            prayerName: getPrayerLabel(pk, isFri)
+                        });
+                    }
+                });
+            });
+
+            if (pendingItems.length === 0) {
+                specificListEl.innerHTML = `
+                    <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/30 text-xs text-emerald-300 flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                        <span>আলহামদুলিল্লাহ! ক্যালেন্ডারে কোনো নির্দিষ্ট তারিখের ক্বজা বকেয়া নেই।</span>
+                    </div>
+                `;
+            } else {
+                pendingItems.forEach(item => {
+                    const [y, m, d] = item.dateStr.split('-').map(Number);
+                    const formattedDate = `${toBengaliNum(d)} ${bengaliMonths[m - 1]}, ${toBengaliNum(y)}`;
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'p-2.5 rounded-xl bg-amber-950/30 border border-amber-600/35 flex items-center justify-between';
+                    itemEl.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            <div>
+                                <span class="text-xs font-bold text-white">${item.prayerName} (${item.prayerKey === 'witr' ? 'ওয়াজিব' : 'ফরজ'})</span>
+                                <span class="text-[11px] text-amber-300/80 block">${formattedDate}</span>
+                            </div>
+                        </div>
+                        <button onclick="resolveSpecificQaza('${item.dateStr}', '${item.prayerKey}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black text-xs font-bold scale-active flex items-center gap-1">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>ক্বজা পড়েছি</span>
+                        </button>
+                    `;
+                    specificListEl.appendChild(itemEl);
+                });
+            }
+
+            // 2. Render Overall Breakdown per Prayer Type (including Witr)
+            const listEl = document.getElementById('qazaBreakdownList');
+            listEl.innerHTML = '';
+
+            const prayerTitles = {
+                fajr: 'ফজর (২ রাকাত ফরজ)',
+                dhuhr: "যোহর / জুমু'আ ফরজ",
+                asr: 'আসর (৪ রাকাত ফরজ)',
+                maghrib: 'মাগরিব (৩ রাকাত ফরজ)',
+                isha: 'এশা (৪ রাকাত ফরজ)',
+                witr: 'বিতর (৩ রাকাত ওয়াজিব)'
+            };
+
+            const counts = { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0 };
+            Object.keys(userData.records).forEach(dStr => {
+                const rec = userData.records[dStr];
+                ALL_TRACKED_KEYS.forEach(pk => {
+                    if (rec[pk] === 'qaza_pending') counts[pk]++;
+                });
+            });
+
+            ALL_TRACKED_KEYS.forEach(pk => {
+                const dynamicCount = counts[pk] || 0;
+                const manualCount = (userData.manualQazaCounters && userData.manualQazaCounters[pk]) || 0;
+                const total = dynamicCount + manualCount;
+
+                const row = document.createElement('div');
+                row.className = 'p-2.5 bg-gray-900/60 rounded-xl border border-gray-800 flex items-center justify-between';
+                row.innerHTML = `
+                    <div>
+                        <span class="font-bold text-xs sm:text-sm text-gray-200 block">${prayerTitles[pk]}</span>
+                        <span class="text-[11px] ${total > 0 ? 'text-amber-400 font-semibold' : 'text-gray-500'}">মোট বাকি: ${toBengaliNum(total)} ওয়াক্ত</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="decrementQaza('${pk}')" ${total <= 0 ? 'disabled' : ''} class="px-2.5 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-black border border-emerald-500/40 text-xs font-bold transition disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 scale-active">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            <span>১টি আদায়</span>
+                        </button>
+                        <button onclick="addManualQaza('${pk}')" class="p-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 scale-active" title="পূর্বের ক্বজা যোগ করুন">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        function resolveSpecificQaza(dateStr, prayerKey) {
+            if (userData.records[dateStr] && userData.records[dateStr][prayerKey] === 'qaza_pending') {
+                userData.records[dateStr][prayerKey] = 'qaza_done';
+                saveData();
+                renderQazaBreakdown();
+                renderCalendar();
+                renderSelectedDay();
+                lucide.createIcons();
+            }
+        }
+
+        function decrementQaza(prayerKey) {
+            let resolvedFromRecord = false;
+            const dates = Object.keys(userData.records).sort(); // oldest first
+            for (let dStr of dates) {
+                if (userData.records[dStr][prayerKey] === 'qaza_pending') {
+                    userData.records[dStr][prayerKey] = 'qaza_done';
+                    resolvedFromRecord = true;
+                    break;
+                }
+            }
+            if (!resolvedFromRecord) {
+                if (userData.manualQazaCounters[prayerKey] > 0) {
+                    userData.manualQazaCounters[prayerKey]--;
+                }
+            }
+            saveData();
+            renderQazaBreakdown();
+            renderCalendar();
+            renderSelectedDay();
+            lucide.createIcons();
+        }
+
+        function addManualQaza(prayerKey) {
+            if (!userData.manualQazaCounters) userData.manualQazaCounters = {};
+            userData.manualQazaCounters[prayerKey] = (userData.manualQazaCounters[prayerKey] || 0) + 1;
+            saveData();
+            renderQazaBreakdown();
+            lucide.createIcons();
+        }
+
+        // Monthly Report Modal
+        function openExportModal() {
+            const modal = document.getElementById('reportModal');
+            document.getElementById('reportMonthTitle').innerText = `${bengaliMonths[currentMonth]} ${toBengaliNum(currentYear)} রিপোর্ট`;
+
+            const statsContainer = document.getElementById('reportStatsContent');
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            let farzPrayed = 0, witrPrayed = 0, qazaDone = 0, qazaPending = 0, missed = 0, jummaCount = 0;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const rec = userData.records[dStr] || {};
+                const isFri = isFridayDate(dStr);
+
+                if (isFri && (rec['dhuhr'] === 'prayed' || rec['dhuhr'] === 'qaza_done')) {
+                    jummaCount++;
+                }
+
+                FARZ_KEYS.forEach(pk => {
+                    const st = rec[pk];
+                    if (st === 'prayed') farzPrayed++;
+                    else if (st === 'qaza_done') qazaDone++;
+                    else if (st === 'qaza_pending') qazaPending++;
+                    else if (st === 'missed') missed++;
+                });
+
+                if (rec['witr'] === 'prayed' || rec['witr'] === 'qaza_done') witrPrayed++;
+                if (rec['witr'] === 'qaza_pending') qazaPending++;
+            }
+
+            statsContainer.innerHTML = `
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/40">
+                        <span class="text-emerald-300 font-medium">ওয়াক্তমতো ফরজ আদায়:</span>
+                        <span class="font-bold text-white">${toBengaliNum(farzPrayed)} ওয়াক্ত</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-purple-950/40 border border-purple-800/40">
+                        <span class="text-purple-300 font-medium">বিতর (Witr) নামাজ আদায়:</span>
+                        <span class="font-bold text-white">${toBengaliNum(witrPrayed)} দিন</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-yellow-950/40 border border-yellow-800/40">
+                        <span class="text-yellow-300 font-medium">পবিত্র জুমু'আ আদায়:</span>
+                        <span class="font-bold text-white">${toBengaliNum(jummaCount)} টি</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40">
+                        <span class="text-cyan-300 font-medium">ক্বজা পরবর্তীতে আদায়:</span>
+                        <span class="font-bold text-white">${toBengaliNum(qazaDone)} ওয়াক্ত</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/40">
+                        <span class="text-amber-300 font-medium">এ মাসে ক্বজা বাকি আছে:</span>
+                        <span class="font-bold text-white">${toBengaliNum(qazaPending)} ওয়াক্ত</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2.5 rounded-xl bg-rose-950/40 border border-rose-800/40">
+                        <span class="text-rose-300 font-medium">অপঠিত / মিসড নামাজ:</span>
+                        <span class="font-bold text-white">${toBengaliNum(missed)} ওয়াক্ত</span>
+                    </div>
+                </div>
+                <div class="p-3 bg-black/40 rounded-xl border border-gray-800 text-[11px] text-gray-300 leading-relaxed text-center">
+                    “নিশ্চয় সালাত মুমিনদের উপর নির্দিষ্ট সময়ে ফরজ করা হয়েছে।” <br>
+                    <span class="text-emerald-400 font-semibold">— সূরা আন-নিসা: ১০৩</span>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+        }
+
+        function openLegendModal() {
+            document.getElementById('legendModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLegendModal() {
+            document.getElementById('legendModal').classList.add('hidden');
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
